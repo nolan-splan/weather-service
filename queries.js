@@ -8,34 +8,10 @@ const pool = new Pool({
   port: 5433,
 })
 
-function writeWeather(json) {
-  findOrCreateLocation(json)
-}
-
-function insertWeather(data, location) {
-  const queryString = `
-    INSERT INTO weather(
-      location_id, description, temp,
-      feels_like,  temp_min,    temp_max,
-      pressure,    humidity,    wind_speed,
-      wind_degree, sunrise,     sunset, name
-    )
-    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
-  const values = getWeatherValues(data)
-  values.unshift(location.location_id)
-  pool.query(queryString, values, (err, res) => {
-    if (err) {
-      throw err
-    } else {
-      var date = new Date()
-      console.log('inserted weather on', date)
-    }
-  })
-}
-
-function findOrCreateLocation(json) {
+const writeWeather = (json) => {
   const { name, coord } = json
   const { lat, lon } = coord
+  // find or create location
   pool.query('SELECT * FROM locations WHERE name = $1', [name], (err, res) => {
     let location;
     if (err) {
@@ -61,7 +37,26 @@ function createLocation(name, lat, lon) {
   })
 }
 
-function getWeatherValues(data) {
+function insertWeather(data, location) {
+  const queryString = `
+    INSERT INTO weather(
+      location_id, description, temp,
+      feels_like,  temp_min,    temp_max,
+      pressure,    humidity,    wind_speed,
+      wind_degree, sunrise,     sunset, name
+    )
+    VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
+  const values = getWeatherValues(data)
+  values.unshift(location.location_id)
+  pool.query(queryString, values, (err, res) => {
+    if (err) {
+      throw err
+    }
+    return true
+  })
+}
+
+const getWeatherValues = (data) => {
   return [
     data.weather[0].description,
     data.main.temp,
